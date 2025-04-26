@@ -113,6 +113,10 @@ class PipeSystemApp:
         self.delete_last_btn = ttk.Button(self.sections_frame, text="Удалить выделенный", command=self.delete_section)
         self.delete_last_btn.grid(row=1, column=2, padx=5, pady=5)
 
+        self.load_sections_button = ttk.Button(self.sections_frame, text="Загрузить из Excel",
+                                               command=self.load_sections_from_excel)
+        self.load_sections_button.grid(row=2, column=2, padx=5, pady=5)
+
         self.sections_listbox = tk.Listbox(self.sections_frame, height=5)
         self.sections_listbox.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
 
@@ -153,6 +157,37 @@ class PipeSystemApp:
         for index in reversed(selected_indices):
             self.sections_listbox.delete(index)
 
+    def load_sections_from_excel(self):
+        """Загрузить участки из Excel файла"""
+        file_path = filedialog.askopenfilename(
+            title="Выберите файл Excel",
+            filetypes=[("Excel files", "*.xlsx *.xls")]
+        )
+
+        if not file_path:
+            return  # пользователь отменил
+
+        try:
+            df = pd.read_excel(file_path)
+
+            # Проверяем, что в файле есть нужные столбцы
+            if 'Название участка' not in df.columns or 'Длина' not in df.columns:
+                messagebox.showerror("Ошибка", "Файл должен содержать столбцы 'Название' и 'Длина'!")
+                return
+
+            # Очищаем старые данные
+            self.sections_listbox.delete(0, tk.END)
+
+            # Добавляем новые данные
+            for _, row in df.iterrows():
+                name = str(row['Название участка'])
+                length = str(row['Длина'])
+                self.sections_listbox.insert(tk.END, f"{name} - {length} м")
+
+            messagebox.showinfo("Успешно", "Участки загружены из Excel!")
+
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{e}")
 
     def get_sections_lengths(self):
         sections = []
