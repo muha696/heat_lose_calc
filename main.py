@@ -158,21 +158,20 @@ class PipeSystemApp:
             self.sections_listbox.delete(index)
 
     def load_sections_from_excel(self):
-        """Загрузить участки из Excel файла"""
         file_path = filedialog.askopenfilename(
             title="Выберите файл Excel",
             filetypes=[("Excel files", "*.xlsx *.xls")]
         )
 
         if not file_path:
-            return  # пользователь отменил
+            return
 
         try:
             df = pd.read_excel(file_path)
 
             # Проверяем, что в файле есть нужные столбцы
             if 'Название участка' not in df.columns or 'Длина' not in df.columns:
-                messagebox.showerror("Ошибка", "Файл должен содержать столбцы 'Название' и 'Длина'!")
+                messagebox.showerror("Ошибка", "Файл должен содержать столбцы 'Название участка' и 'Длина'!")
                 return
 
             # Очищаем старые данные
@@ -232,17 +231,23 @@ class PipeSystemApp:
                 Q_pr = self.q_pr * i * (1 + mu)
                 delta_t = Q_pr * 0.001 / ((flow / 3.6) * 4.185)
                 tp_out = tp_in - delta_t
+                if tp_out <= tgr:
+                    tp_out = tgr
                 self.tp_data.append(tp_out)
                 self.tp_list.append([tp_in, tp_out])
                 tp_in = tp_out
                 self.l_list.append(self.l_list[-1] + i)
 
             self.ax.clear()
-            self.ax.plot(self.l_list, self.tp_data)
+            self.ax.plot(self.l_list, self.tp_data, marker='o', color='black', markerfacecolor='red')
+            for i in range(1, len(self.l_list)):
+                self.ax.plot([self.l_list[i], self.l_list[i]], [0, self.tp_data[i]], color='black', linestyle='--')
             self.ax.spines['bottom'].set_linewidth(1.5)
             self.ax.spines['left'].set_linewidth(1.5)
             self.ax.spines['right'].set_linewidth(1.5)
             self.ax.spines['top'].set_linewidth(1.5)
+            self.ax.set_ylim(self.tp_data[-1] - 1, self.tp_data[0] + 1)
+            self.ax.set_xlim(0, self.l_list[-1])
             self.ax.set_xlabel("Длина, м")
             self.ax.set_ylabel("Температура воды, °C")
             self.ax.grid(True, linestyle='--', color='k', linewidth=1)
@@ -251,6 +256,7 @@ class PipeSystemApp:
             self.excelbtn.config(state='normal')
 
         except Exception as e:
+            print(e)
             messagebox.showerror(title="Ошибка", message=f'Ошибка в данных {e}!')
 
 
